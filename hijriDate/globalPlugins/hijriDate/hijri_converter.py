@@ -1,6 +1,6 @@
 # Hijri (Islamic) Calendar Converter
-# Based on the Umm al-Qura calendar approximation algorithm
-# Pure Python implementation with no external dependencies
+# Primary: Official Umm al-Qura calendar data (hijridate library)
+# Fallback: Kuwaiti algorithm for dates outside supported range or import errors
 
 import math
 
@@ -36,9 +36,16 @@ HIJRI_MONTHS_AR = [
 	"\u0630\u0648 \u0627\u0644\u062d\u062c\u0629",
 ]
 
+# Try to import the Umm al-Qura library
+try:
+	from .hijridate import Gregorian as _UmmAlQuraGregorian
+	_HAS_UMMALQURA = True
+except Exception:
+	_HAS_UMMALQURA = False
+
 
 def _gregorian_to_jd(year, month, day):
-	"""Convert a Gregorian date to Julian Day Number."""
+	"""Convert a Gregorian date to Julian Day Number (Kuwaiti fallback)."""
 	if month <= 2:
 		year -= 1
 		month += 12
@@ -61,8 +68,17 @@ def _jd_to_hijri(jd):
 	return (year, month, day)
 
 
+def _kuwaiti_gregorian_to_hijri(year, month, day):
+	"""Kuwaiti algorithm fallback for Hijri conversion."""
+	jd = _gregorian_to_jd(year, month, day)
+	return _jd_to_hijri(jd)
+
+
 def gregorian_to_hijri(year, month, day):
 	"""Convert a Gregorian date to a Hijri date.
+
+	Uses the official Umm al-Qura calendar as primary source.
+	Falls back to the Kuwaiti algorithm if unavailable or out of range.
 
 	Args:
 		year: Gregorian year
@@ -72,8 +88,13 @@ def gregorian_to_hijri(year, month, day):
 	Returns:
 		Tuple of (hijri_year, hijri_month, hijri_day)
 	"""
-	jd = _gregorian_to_jd(year, month, day)
-	return _jd_to_hijri(jd)
+	if _HAS_UMMALQURA:
+		try:
+			hijri = _UmmAlQuraGregorian(year, month, day).to_hijri()
+			return (hijri.year, hijri.month, hijri.day)
+		except (OverflowError, ValueError):
+			pass
+	return _kuwaiti_gregorian_to_hijri(year, month, day)
 
 
 def get_hijri_month_name(month, language="en"):

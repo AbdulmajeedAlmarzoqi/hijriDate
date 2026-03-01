@@ -31,13 +31,13 @@ confspec = {
 }
 config.conf.spec["hijriDate"] = confspec
 
-# Get the current addon version lazily to avoid calling getAvailableAddons() at module level
+# Get the current addon version lazily
 _addonVersion = None
 
 def _getAddonVersion():
 	global _addonVersion
 	if _addonVersion is None:
-		_addonVersion = "1.0.0"
+		_addonVersion = "2.0.0"
 		try:
 			for addon in addonHandler.getAvailableAddons():
 				if addon.name == "hijriDate":
@@ -101,7 +101,7 @@ class HijriDateSettingsPanel(SettingsPanel):
 		# Translators: Label for the check for updates button in settings.
 		self.updateButton.SetLabel(_("Check for &updates"))
 		self.updateButton.Enable()
-		if not result["update_available"]:
+		if not result or not result["update_available"]:
 			# Translators: Message shown when the addon is up to date.
 			gui.messageBox(
 				_("You are up to date. Current version: {version}").format(version=_getAddonVersion()),
@@ -241,11 +241,50 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(HijriDateSettingsPanel)
-		self._lastDateAnnounceTime = 0
+		self._lastScriptTime = 0
+		self._pendingUpdate = None
+		self._midnightTimer = None
+		# Start silent background update check after a delay
+		self._startupTimer = threading.Timer(30.0, self._silentUpdateCheck)
+		self._startupTimer.daemon = True
+		self._startupTimer.start()
+		# Schedule the first midnight timer
+		self._scheduleMidnightCheck()
 
 	def terminate(self, *args, **kwargs):
 		super().terminate(*args, **kwargs)
-		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(HijriDateSettingsPanel)
+		try:
+			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(HijriDateSettingsPanel)
+		except ValueError:
+			pass
+		# Cancel pending timers
+		if self._startupTimer:
+			self._startupTimer.cancel()
+		if self._midnightTimer:
+			self._midnightTimer.cancel()
+
+	def _silentUpdateCheck(self):
+		"""Check for addon updates silently in the background."""
+		try:
+			result = check_for_update(_getAddonVersion(), silent=True)
+			if result and result.get("update_available") and result.get("download_url"):
+				self._pendingUpdate = result
+		except Exception:
+			pass
+
+	def _scheduleMidnightCheck(self):
+		"""Schedule a silent update check at the next midnight."""
+		now = datetime.datetime.now()
+		midnight = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+		seconds_until_midnight = (midnight - now).total_seconds()
+		self._midnightTimer = threading.Timer(seconds_until_midnight, self._midnightCallback)
+		self._midnightTimer.daemon = True
+		self._midnightTimer.start()
+
+	def _midnightCallback(self):
+		"""Called at midnight: check for updates and reschedule."""
+		self._silentUpdateCheck()
+		self._scheduleMidnightCheck()
 
 	_scriptDecoratorArgs = {
 		# Translators: Description of the date/time script shown in input gestures.
@@ -257,25 +296,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		import buildVersion
 		if (buildVersion.version_year, buildVersion.version_major) >= (2024, 1):
 			_scriptDecoratorArgs["speakOnDemand"] = True
-	except Exception:
+	except (ImportError, AttributeError):
 		pass
 
 	@script(**_scriptDecoratorArgs)
 	def script_dateTimeWithHijri(self, gesture):
-		if time.monotonic() - self._lastDateAnnounceTime < 1.5:
+		now = time.monotonic()
+		if now - self._lastScriptTime < 1.5:
 			return
 		repeatCount = scriptHandler.getLastScriptRepeatCount()
 		if repeatCount >= 2:
 			return
 		if repeatCount == 0:
 			# Single press: announce time
-			now = datetime.datetime.now()
-			timeStr = now.strftime("%I:%M %p" if not self._use24HourFormat() else "%H:%M")
+			dt = datetime.datetime.now()
+			timeStr = dt.strftime("%I:%M %p" if not self._use24HourFormat() else "%H:%M")
 			ui.message(timeStr)
 		elif repeatCount == 1:
 			# Double press: announce date with Hijri
+			self._lastScriptTime = now
 			self._announceDate()
-			self._lastDateAnnounceTime = time.monotonic()
 
 	def _use24HourFormat(self):
 		"""Check if the system uses 24-hour time format."""
@@ -304,21 +344,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		)
 		if result > 0:
 			return buf.value
-		# Fallback to Python strftime if the API call fails
 		return datetime.datetime.now().strftime("%A, %B %d, %Y")
 
 	def _announceDate(self):
 		"""Announce the Gregorian and Hijri dates based on user preference."""
-		# Get Gregorian date string from system locale
 		gregorianStr = self._getSystemDateString()
-		# Get Hijri date from current system time
 		now = datetime.datetime.now()
 		hYear, hMonth, hDay = gregorian_to_hijri(now.year, now.month, now.day)
-		# Determine display language for Hijri month names
 		lang = languageHandler.getLanguage()
 		hijriLang = "ar" if lang and lang.startswith("ar") else "en"
 		hijriStr = format_hijri_date(hYear, hMonth, hDay, hijriLang)
-		# Get user preference for date priority
 		priority = config.conf["hijriDate"]["datePriority"]
 		if priority == "gregorian_first":
 			# Translators: Date announcement with Gregorian date first.

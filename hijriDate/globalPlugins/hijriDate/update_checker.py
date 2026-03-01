@@ -13,7 +13,11 @@ import zipfile
 GITHUB_OWNER = "AbdulmajeedAlmarzoqi"
 GITHUB_REPO = "hijriDate"
 API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
-USER_AGENT = "NVDA-HijriDate-Addon"
+USER_AGENT = "NVDA-HijriDate-Addon/2.0"
+
+# Cached ETag for conditional requests (reduces API rate limit usage)
+_cached_etag = None
+_cached_response = None
 
 
 def _parse_version(version_str):
@@ -30,11 +34,12 @@ def _parse_version(version_str):
 	return tuple(parts[:3])
 
 
-def check_for_update(current_version):
+def check_for_update(current_version, silent=False):
 	"""Check GitHub for a newer release.
 
 	Args:
-		current_version: Current addon version string (e.g. "1.0.0")
+		current_version: Current addon version string (e.g. "2.0.0")
+		silent: If True, return None on any error instead of raising
 
 	Returns:
 		dict with keys:
@@ -42,47 +47,69 @@ def check_for_update(current_version):
 			- "latest_version" (str)
 			- "changelog" (str) - release body / what's new
 			- "download_url" (str) - URL to the .nvda-addon asset
-		Or raises an exception on failure.
+		Or None if silent=True and an error occurred.
+		Or raises an exception on failure if silent=False.
 	"""
-	context = ssl.create_default_context()
-	req = urllib.request.Request(
-		API_URL,
-		headers={
+	global _cached_etag, _cached_response
+
+	try:
+		context = ssl.create_default_context()
+		headers = {
 			"User-Agent": USER_AGENT,
-			"Accept": "application/vnd.github.v3+json",
-		},
-	)
-	with urllib.request.urlopen(req, context=context, timeout=30) as response:
-		if response.status != 200:
-			raise RuntimeError(f"GitHub API returned status {response.status}")
-		data = json.loads(response.read().decode("utf-8"))
+			"Accept": "application/vnd.github+json",
+		}
+		# Use ETag for conditional requests to save API quota
+		if _cached_etag:
+			headers["If-None-Match"] = _cached_etag
 
-	tag_name = data.get("tag_name", "")
-	latest_version = tag_name.lstrip("v")
-	changelog = data.get("body", "") or ""
+		req = urllib.request.Request(API_URL, headers=headers)
+		try:
+			with urllib.request.urlopen(req, context=context, timeout=15) as response:
+				# Store ETag for future conditional requests
+				etag = response.headers.get("ETag")
+				if etag:
+					_cached_etag = etag
+				data = json.loads(response.read().decode("utf-8"))
+				_cached_response = data
+		except urllib.error.HTTPError as e:
+			if e.code == 304 and _cached_response:
+				# Not modified, use cached response
+				data = _cached_response
+			elif e.code == 403 or e.code == 429:
+				# Rate limited
+				if silent:
+					return None
+				raise RuntimeError("GitHub API rate limit exceeded. Please try again later.")
+			else:
+				raise
 
-	# Find the .nvda-addon asset
-	download_url = ""
-	assets = data.get("assets", [])
-	for asset in assets:
-		name = asset.get("name", "")
-		if name.endswith(".nvda-addon"):
-			download_url = asset.get("browser_download_url", "")
-			break
+		tag_name = data.get("tag_name", "")
+		latest_version = tag_name.lstrip("v")
+		changelog = data.get("body", "") or ""
 
-	# If no asset found, fall back to the zipball
-	if not download_url:
-		download_url = data.get("zipball_url", "")
+		# Find the .nvda-addon asset only (zipball is not a valid addon)
+		download_url = ""
+		assets = data.get("assets", [])
+		for asset in assets:
+			name = asset.get("name", "")
+			if name.endswith(".nvda-addon"):
+				download_url = asset.get("browser_download_url", "")
+				break
 
-	current_tuple = _parse_version(current_version)
-	latest_tuple = _parse_version(latest_version)
+		current_tuple = _parse_version(current_version)
+		latest_tuple = _parse_version(latest_version)
 
-	return {
-		"update_available": latest_tuple > current_tuple,
-		"latest_version": latest_version,
-		"changelog": changelog,
-		"download_url": download_url,
-	}
+		return {
+			"update_available": latest_tuple > current_tuple,
+			"latest_version": latest_version,
+			"changelog": changelog,
+			"download_url": download_url,
+		}
+
+	except Exception:
+		if silent:
+			return None
+		raise
 
 
 def download_update(download_url):
@@ -109,7 +136,7 @@ def download_update(download_url):
 
 	temp_fd, temp_path = tempfile.mkstemp(suffix=".nvda-addon")
 	try:
-		with urllib.request.urlopen(req, context=context, timeout=120) as response:
+		with urllib.request.urlopen(req, context=context, timeout=60) as response:
 			if response.status != 200:
 				raise RuntimeError(f"Download failed with status {response.status}")
 			with os.fdopen(temp_fd, "wb") as f:

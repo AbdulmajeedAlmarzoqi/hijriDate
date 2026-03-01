@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: hijriDate 1.0.0\n"
+"Project-Id-Version: hijriDate 2.0.0\n"
 "Report-Msgid-Bugs-To: abdulmjad01@gmail.com\n"
-"POT-Creation-Date: 2025-01-01 00:00+0000\n"
-"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"POT-Creation-Date: 2026-03-01 00:00+0000\n"
+"PO-Revision-Date: 2026-03-01 00:00+0000\n"
 "Last-Translator: Abdulmajeed Almarzoqi <abdulmjad01@gmail.com>\n"
 "Language-Team: Arabic\n"
 "Language: ar\n"

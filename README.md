@@ -13,7 +13,8 @@ An NVDA add-on that speaks the Hijri (Islamic) date alongside the Gregorian date
 - **NVDA+F12** (press once): Reports the current time
 - **NVDA+F12** (press twice): Reports Gregorian and Hijri dates together
 - **Settings panel** to choose date priority (Hijri first or Gregorian first)
-- **Built-in update checker** to download and install new versions from GitHub
+- **Built-in update checker** with automatic silent background checks
+- **Umm al-Qura calendar** for accurate Hijri dates with Kuwaiti algorithm fallback
 - Gregorian date follows the Windows system locale format
 - Hijri date displayed with era abbreviation (AH / هـ)
 - Full Arabic translation included
@@ -53,7 +54,7 @@ python compile_mo.py
 python build.py
 ```
 
-The output file `hijriDate-1.0.0.nvda-addon` will be created in the project root.
+The output file will be created in the project root with the version from manifest.ini.
 
 ---
 
@@ -64,8 +65,9 @@ hijriDate/
   manifest.ini
   globalPlugins/hijriDate/
     __init__.py          # Main plugin (settings, script, UI)
-    hijri_converter.py   # Hijri calendar conversion
+    hijri_converter.py   # Hijri calendar conversion (Umm al-Qura + fallback)
     update_checker.py    # GitHub update checker
+    hijridate/           # Vendored Umm al-Qura calendar library
   locale/ar/
     manifest.ini
     LC_MESSAGES/nvda.mo
