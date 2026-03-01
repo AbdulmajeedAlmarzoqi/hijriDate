@@ -1,0 +1,94 @@
+# Arabic translations for Hijri Date NVDA Add-on
+# Copyright (C) 2025 Abdulmajeed Almarzoqi
+# This file is distributed under the GNU General Public License v2.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: hijriDate 1.0.0\n"
+"Report-Msgid-Bugs-To: abdulmjad01@gmail.com\n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: Abdulmajeed Almarzoqi <abdulmjad01@gmail.com>\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Translators: Title of the Hijri Date settings panel in NVDA Preferences.
+msgid "Hijri Date"
+msgstr "التاريخ الهجري"
+
+#. Translators: Label for the date priority combo box in settings.
+msgid "Date announcement &priority:"
+msgstr "&أولوية نطق التاريخ:"
+
+#. Translators: Option to announce Hijri date before Gregorian date.
+msgid "Hijri first"
+msgstr "الهجري أولاً"
+
+#. Translators: Option to announce Gregorian date before Hijri date.
+msgid "Gregorian first"
+msgstr "الميلادي أولاً"
+
+#. Translators: Description of the date/time script shown in input gestures.
+msgid "Reports the current time. Press twice to report the Gregorian and Hijri dates."
+msgstr "ينطق الوقت الحالي. اضغط مرتين لنطق التاريخ الميلادي والهجري."
+
+#. Translators: Date announcement with Gregorian date first.
+#. {gregorian} is the Gregorian date, {hijri} is the Hijri date.
+msgid "{gregorian}, {hijri}"
+msgstr "{gregorian}، {hijri}"
+
+#. Translators: Date announcement with Hijri date first.
+#. {hijri} is the Hijri date, {gregorian} is the Gregorian date.
+msgid "{hijri}, {gregorian}"
+msgstr "{hijri}، {gregorian}"
+
+#. Translators: Label for the check for updates button in settings.
+msgid "Check for &updates"
+msgstr "التحقق من الت&حديثات"
+
+#. Translators: Message shown while checking for updates.
+msgid "Checking for updates..."
+msgstr "جارِ التحقق من التحديثات..."
+
+#. Translators: Title of the update available dialog.
+msgid "Update Available"
+msgstr "تحديث متاح"
+
+#. Translators: Message shown when the addon is up to date.
+msgid "You are up to date. Current version: {version}"
+msgstr "الإضافة محدّثة. الإصدار الحالي: {version}"
+
+#. Translators: Message showing that a new version is available.
+msgid "A new version {new_version} is available. You are currently using version {current_version}."
+msgstr "يتوفر إصدار جديد {new_version}. أنت تستخدم حالياً الإصدار {current_version}."
+
+#. Translators: Label for the what's new section in the update dialog.
+msgid "What's New:"
+msgstr "ما الجديد:"
+
+#. Translators: Label for the download and install button in the update dialog.
+msgid "&Download and Install"
+msgstr "&تنزيل وتثبيت"
+
+#. Translators: Label shown while downloading the update.
+msgid "Downloading..."
+msgstr "جارِ التنزيل..."
+
+#. Translators: Message shown after successfully installing the update.
+msgid "Update installed successfully. Please restart NVDA to apply the changes."
+msgstr "تم تثبيت التحديث بنجاح. يرجى إعادة تشغيل NVDA لتطبيق التغييرات."
+
+#. Translators: Error message shown when update check fails.
+msgid "Error checking for updates: {error}"
+msgstr "خطأ في التحقق من التحديثات: {error}"
+
+#. Translators: Error message when installation fails.
+msgid "Error installing update: {error}"
+msgstr "خطأ في تثبيت التحديث: {error}"
+
+#. Translators: Error message when download fails.
+msgid "Error downloading update: {error}"
+msgstr "خطأ في تنزيل التحديث: {error}"

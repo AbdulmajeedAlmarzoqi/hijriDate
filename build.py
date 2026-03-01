@@ -1,0 +1,24 @@
+"""Build script to package the Hijri Date NVDA add-on."""
+import os
+import zipfile
+
+def build_addon():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    addon_dir = os.path.join(base_dir, 'hijriDate')
+    output_file = os.path.join(base_dir, 'hijriDate-1.0.0.nvda-addon')
+
+    with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(addon_dir):
+            for f in files:
+                filepath = os.path.join(root, f)
+                arcname = os.path.relpath(filepath, addon_dir)
+                # Skip __pycache__ and .pyc files
+                if '__pycache__' in filepath or f.endswith('.pyc'):
+                    continue
+                zf.write(filepath, arcname)
+                print(f'  Added: {arcname}')
+
+    print(f'\nAdd-on packaged successfully: {output_file}')
+
+if __name__ == '__main__':
+    build_addon()
