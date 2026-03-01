@@ -55,9 +55,9 @@ def _jd_to_hijri(jd):
 	L = L - 10631 * N + 354
 	J = (math.floor((10985 - L) / 5316)) * (math.floor((50 * L) / 17719)) + (math.floor(L / 5670)) * (math.floor((43 * L) / 15238))
 	L = L - (math.floor((30 - J) / 15)) * (math.floor((17719 * J) / 50)) - (math.floor(J / 16)) * (math.floor((15238 * J) / 43)) + 29
-	month = math.floor((24 * L) / 709)
-	day = L - math.floor((709 * month) / 24)
-	year = 30 * N + J - 30
+	month = int(math.floor((24 * L) / 709))
+	day = int(L - math.floor((709 * month) / 24))
+	year = int(30 * N + J - 30)
 	return (year, month, day)
 
 

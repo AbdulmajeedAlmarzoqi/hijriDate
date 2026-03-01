@@ -15,7 +15,6 @@ import ui
 import config
 import gui
 from gui.settingsDialogs import SettingsPanel
-from gui import messageDialog
 from scriptHandler import script
 import inputCore
 import languageHandler
@@ -31,12 +30,21 @@ confspec = {
 }
 config.conf.spec["hijriDate"] = confspec
 
-# Get the current addon version
-_addonVersion = "1.0.0"
-for addon in addonHandler.getAvailableAddons():
-	if addon.name == "hijriDate":
-		_addonVersion = addon.version
-		break
+# Get the current addon version lazily to avoid calling getAvailableAddons() at module level
+_addonVersion = None
+
+def _getAddonVersion():
+	global _addonVersion
+	if _addonVersion is None:
+		_addonVersion = "1.0.0"
+		try:
+			for addon in addonHandler.getAvailableAddons():
+				if addon.name == "hijriDate":
+					_addonVersion = addon.version
+					break
+		except Exception:
+			pass
+	return _addonVersion
 
 
 class HijriDateSettingsPanel(SettingsPanel):
@@ -83,7 +91,7 @@ class HijriDateSettingsPanel(SettingsPanel):
 
 	def _checkUpdateThread(self):
 		try:
-			result = check_for_update(_addonVersion)
+			result = check_for_update(_getAddonVersion())
 			wx.CallAfter(self._onUpdateResult, result)
 		except Exception as e:
 			wx.CallAfter(self._onUpdateError, str(e))
@@ -95,7 +103,7 @@ class HijriDateSettingsPanel(SettingsPanel):
 		if not result["update_available"]:
 			# Translators: Message shown when the addon is up to date.
 			gui.messageBox(
-				_("You are up to date. Current version: {version}").format(version=_addonVersion),
+				_("You are up to date. Current version: {version}").format(version=_getAddonVersion()),
 				# Translators: Title of the no update available message box.
 				_("Hijri Date"),
 				wx.OK | wx.ICON_INFORMATION,
@@ -103,7 +111,7 @@ class HijriDateSettingsPanel(SettingsPanel):
 		else:
 			dlg = UpdateAvailableDialog(
 				self,
-				currentVersion=_addonVersion,
+				currentVersion=_getAddonVersion(),
 				newVersion=result["latest_version"],
 				changelog=result["changelog"],
 				downloadUrl=result["download_url"],
@@ -237,13 +245,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		super().terminate(*args, **kwargs)
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(HijriDateSettingsPanel)
 
-	@script(
+	_scriptDecoratorArgs = {
 		# Translators: Description of the date/time script shown in input gestures.
-		description=_("Reports the current time. Press twice to report the Gregorian and Hijri dates."),
-		gesture="kb:NVDA+f12",
-		category=inputCore.SCRCAT_MISC,
-		speakOnDemand=True,
-	)
+		"description": _("Reports the current time. Press twice to report the Gregorian and Hijri dates."),
+		"gesture": "kb:NVDA+f12",
+		"category": inputCore.SCRCAT_MISC,
+	}
+	try:
+		import buildVersion
+		if (buildVersion.version_year, buildVersion.version_major) >= (2024, 1):
+			_scriptDecoratorArgs["speakOnDemand"] = True
+	except Exception:
+		pass
+
+	@script(**_scriptDecoratorArgs)
 	def script_dateTimeWithHijri(self, gesture):
 		repeatCount = scriptHandler.getLastScriptRepeatCount()
 		if repeatCount == 0:
