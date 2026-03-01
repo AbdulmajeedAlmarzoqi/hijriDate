@@ -37,7 +37,7 @@ _addonVersion = None
 def _getAddonVersion():
 	global _addonVersion
 	if _addonVersion is None:
-		_addonVersion = "2.0.0"
+		_addonVersion = "1.0.0"
 		try:
 			for addon in addonHandler.getAvailableAddons():
 				if addon.name == "hijriDate":
