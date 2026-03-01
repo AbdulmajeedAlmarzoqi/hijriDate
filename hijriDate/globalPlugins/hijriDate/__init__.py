@@ -261,6 +261,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@script(**_scriptDecoratorArgs)
 	def script_dateTimeWithHijri(self, gesture):
 		repeatCount = scriptHandler.getLastScriptRepeatCount()
+		if repeatCount >= 2:
+			return
 		if repeatCount == 0:
 			# Single press: announce time
 			now = datetime.datetime.now()
