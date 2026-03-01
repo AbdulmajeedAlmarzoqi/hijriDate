@@ -5,7 +5,7 @@ import zipfile
 def build_addon():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     addon_dir = os.path.join(base_dir, 'hijriDate')
-    output_file = os.path.join(base_dir, 'hijriDate-1.0.0.nvda-addon')
+    output_file = os.path.join(base_dir, 'hijriDate-2.0.0.nvda-addon')
 
     with zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED) as zf:
         for root, dirs, files in os.walk(addon_dir):

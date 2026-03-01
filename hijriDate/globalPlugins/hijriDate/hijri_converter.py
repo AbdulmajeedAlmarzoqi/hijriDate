@@ -1,8 +1,9 @@
 # Hijri (Islamic) Calendar Converter
-# Based on the Umm al-Qura calendar approximation algorithm
-# Pure Python implementation with no external dependencies
+# Uses the official Umm al-Qura calendar data via the hijridate library
+# Accurate dates based on data from King Abdulaziz City for Science and Technology (KACST)
 
-import math
+from .hijridate import Gregorian
+
 
 # Hijri month names in English
 HIJRI_MONTHS_EN = [
@@ -37,32 +38,8 @@ HIJRI_MONTHS_AR = [
 ]
 
 
-def _gregorian_to_jd(year, month, day):
-	"""Convert a Gregorian date to Julian Day Number."""
-	if month <= 2:
-		year -= 1
-		month += 12
-	A = math.floor(year / 100)
-	B = 2 - A + math.floor(A / 4)
-	return math.floor(365.25 * (year + 4716)) + math.floor(30.6001 * (month + 1)) + day + B - 1524.5
-
-
-def _jd_to_hijri(jd):
-	"""Convert Julian Day Number to Hijri date using the Kuwaiti algorithm."""
-	jd = math.floor(jd) + 0.5
-	L = math.floor(jd) - 1948440 + 10632
-	N = math.floor((L - 1) / 10631)
-	L = L - 10631 * N + 354
-	J = (math.floor((10985 - L) / 5316)) * (math.floor((50 * L) / 17719)) + (math.floor(L / 5670)) * (math.floor((43 * L) / 15238))
-	L = L - (math.floor((30 - J) / 15)) * (math.floor((17719 * J) / 50)) - (math.floor(J / 16)) * (math.floor((15238 * J) / 43)) + 29
-	month = int(math.floor((24 * L) / 709))
-	day = int(L - math.floor((709 * month) / 24))
-	year = int(30 * N + J - 30)
-	return (year, month, day)
-
-
 def gregorian_to_hijri(year, month, day):
-	"""Convert a Gregorian date to a Hijri date.
+	"""Convert a Gregorian date to a Hijri date using the official Umm al-Qura calendar.
 
 	Args:
 		year: Gregorian year
@@ -72,8 +49,8 @@ def gregorian_to_hijri(year, month, day):
 	Returns:
 		Tuple of (hijri_year, hijri_month, hijri_day)
 	"""
-	jd = _gregorian_to_jd(year, month, day)
-	return _jd_to_hijri(jd)
+	hijri = Gregorian(year, month, day).to_hijri()
+	return (hijri.year, hijri.month, hijri.day)
 
 
 def get_hijri_month_name(month, language="en"):
