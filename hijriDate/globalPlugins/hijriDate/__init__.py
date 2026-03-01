@@ -5,6 +5,7 @@
 import ctypes
 import datetime
 import os
+import time
 import threading
 import wx
 
@@ -240,6 +241,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(HijriDateSettingsPanel)
+		self._lastDateAnnounceTime = 0
 
 	def terminate(self, *args, **kwargs):
 		super().terminate(*args, **kwargs)
@@ -260,6 +262,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	@script(**_scriptDecoratorArgs)
 	def script_dateTimeWithHijri(self, gesture):
+		if time.monotonic() - self._lastDateAnnounceTime < 1.5:
+			return
 		repeatCount = scriptHandler.getLastScriptRepeatCount()
 		if repeatCount >= 2:
 			return
@@ -271,6 +275,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		elif repeatCount == 1:
 			# Double press: announce date with Hijri
 			self._announceDate()
+			self._lastDateAnnounceTime = time.monotonic()
 
 	def _use24HourFormat(self):
 		"""Check if the system uses 24-hour time format."""
